@@ -33,15 +33,15 @@ def main():
 	
 	try:
 		# Get and parse the Web Page
-		response = requests.get(google_search_url, headers=headers) # download the page
+		response = requests.get(google_search_url, headers=headers) # Download the page
 		web_text = BeautifulSoup(response.text, "html.parser") # Parse Page to Text
 		
 		# Obtain titles, links and abstracts of all the search results
 		for result in web_text.body.findAll(class_='g'): # For every search result
-			titles.append(result.find(class_='r').text)
-			links.append(result.find('cite').text)
-			abstracts.append(result.find(class_='st').text)
-			#dates.append(result.find(class_='f').text) # 
+			titles.append(result.find(class_='r').text) # Get the title
+			links.append(result.find('cite').text) # Get the link
+			abstracts.append(result.find(class_='st').text) # Get the abstract
+			#dates.append(result.find(class_='f').text) # Get the date
 		
 		# Show the obtained results
 		for i in xrange(0, len(titles)):
@@ -50,6 +50,7 @@ def main():
 			print(abstracts[i])
 			print(" ")
 	except:
+		# Catch exceptions
 		print("Error: ", sys.exc_info())
 		exit()
 
