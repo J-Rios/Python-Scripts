@@ -29,7 +29,7 @@ def main():
 	
 	global titles
 	global links
-	global resumenes
+	global abstracts
 	
 	try:
 		# Get and parse the Web Page
