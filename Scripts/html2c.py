@@ -87,19 +87,26 @@ def main(argc, argv):
 				# Modify start of the lines (keep identation and set a " before the text)
 				if line[0] == '\t':
 					num_tabs = str_count_start_same_chars(line)
-					line = '{}"{}'.format(line[:num_tabs], line[num_tabs:])
+					if num_tabs:
+						start_str = '{}"'.format(line[:num_tabs])
+						end_str = line[num_tabs:]
+						for _ in range(0, num_tabs):
+							start_str = '{}\\t'.format(start_str)
+						line = '{}{}'.format(start_str, end_str)
+					else:
+						line = '"{}'.format(line)
 				else:
 					line = '"{}'.format(line)
 				# Add one level of identation
 				line = '\t{}'.format(line)
 				# Set an " at the end of the line text (relace '\n' with '"\n')
-				line = line.replace('\n', '"\n')
-				if " //" not in line: # Just keep lines without comments (//)
-					if "/*" not in line: # Just keep lines without comments (/*)
-						if "*/" not in line: # Just keep lines without comments (*/)
-							html_modified_lines.append(line) # Keep this line
-							html_modified_text = ''.join(html_modified_lines) # Convert string list to one string
-							html_modified_text = "const char HTML_PAGE_NAME[] /*PROGMEM*/ = \n{}\";".format(html_modified_text) # Add initial and end structure ("#define CHANGE_NAME " \ \ntext\n")
+				line = line.replace('\n', '\\n"\n')
+				#if "// " not in line: # Just keep lines without comments (// )
+				#	if "/*" not in line: # Just keep lines without comments (/*)
+				#		if "*/" not in line: # Just keep lines without comments (*/)
+				html_modified_lines.append(line) # Keep this line
+				html_modified_text = ''.join(html_modified_lines) # Convert string list to one string
+				html_modified_text = "const char HTML_PAGE_NAME[] /*PROGMEM*/ = \n{}\";".format(html_modified_text) # Add initial and end structure ("#define CHANGE_NAME " \ \ntext\n")
 		# Write output file
 		file_html = open("output.c", "w")
 		file_html.write(html_modified_text)
