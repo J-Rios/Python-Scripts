@@ -10,7 +10,7 @@ Author:
 Creation date:
     13/02/2018
 Last modified date:
-    13/02/2018
+    19/02/2018
 Version:
     1.0.0
 '''
@@ -101,6 +101,9 @@ def main(argc, argv):
 				line = '\t{}'.format(line)
 				# Set an " at the end of the line text (relace '\n' with '"\n')
 				line = line.replace('\n', '\\n"\n')
+				# Replace comments \n with \\n
+				line = line.replace("'\\n'", "'\\\\n'")
+				line = line.replace("\"\\n\"", "\"\\\\n\"")
 				#if "// " not in line: # Just keep lines without comments (// )
 				#	if "/*" not in line: # Just keep lines without comments (/*)
 				#		if "*/" not in line: # Just keep lines without comments (*/)
