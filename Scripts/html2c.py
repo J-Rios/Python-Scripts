@@ -10,7 +10,7 @@ Author:
 Creation date:
     13/02/2018
 Last modified date:
-    13/02/2018
+    22/02/2018
 Version:
     1.0.0
 '''
@@ -113,7 +113,7 @@ def main(argc, argv):
 		file_html = open("output.c", "w")
 		file_html.write(html_modified_text)
 		file_html.close()
-		print("    [OK] HTML successfully converted in \"output-py\" file.")
+		print("    [OK] HTML successfully converted in \"output.c\" file.")
 	else:
 		print("    [Error] You need to specify an input argument for the html file to convert.")
 
