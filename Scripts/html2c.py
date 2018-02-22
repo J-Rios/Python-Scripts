@@ -10,7 +10,7 @@ Author:
 Creation date:
     13/02/2018
 Last modified date:
-    19/02/2018
+    13/02/2018
 Version:
     1.0.0
 '''
@@ -80,10 +80,12 @@ def main(argc, argv):
 		for line in html_original_lines:
     		# Ignore empty lines
 			if not str_just_tab_eol(line):
-    			# Replace "    " with "\t" (if any)
+    			# Replace all initial "    " with "\t" (if any)
 				line = str_spaces_to_tabs(line)
+				# Replace \ with \\
+				line = line.replace("\\", "\\\\")
 				# Replace " with \"
-				line = line.replace('\"', '\\"')
+				line = line.replace("\"", "\\\"")
 				# Modify start of the lines (keep identation and set a " before the text)
 				if line[0] == '\t':
 					num_tabs = str_count_start_same_chars(line)
@@ -100,10 +102,7 @@ def main(argc, argv):
 				# Add one level of identation
 				line = '\t{}'.format(line)
 				# Set an " at the end of the line text (relace '\n' with '"\n')
-				line = line.replace('\n', '\\n"\n')
-				# Replace comments \n with \\n
-				line = line.replace("'\\n'", "'\\\\n'")
-				line = line.replace("\"\\n\"", "\"\\\\n\"")
+				line = line.replace("\n", "\\n\"\n")
 				#if "// " not in line: # Just keep lines without comments (// )
 				#	if "/*" not in line: # Just keep lines without comments (/*)
 				#		if "*/" not in line: # Just keep lines without comments (*/)
