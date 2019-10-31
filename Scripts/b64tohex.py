@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Description: Decode a given BASE64 data string into hexadecimal
 
 ####################################################################################################
 
@@ -42,6 +43,7 @@ def main():
     try:
         argv = get_and_check_args()
         b64_string = argv[0]
+        b64_string = "{}==".format(b64_string) # Add padding to avoid fail if not present
         hex_string = b64decode(b64_string)
         hex_string = hex_string.hex()
         print(hex_string)
