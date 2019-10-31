@@ -7,6 +7,7 @@
 
 from sys import exit
 from time import sleep
+from traceback import format_exc
 from signal import signal, SIGTERM, SIGINT
 
 ####################################################################################################
@@ -23,26 +24,27 @@ def function_1():
     '''Function Description.'''
     print(TEXT_HELLO)
 
+
 ####################################################################################################
 
 ### Main and Finish Functions ###
 
 def main():
     '''Main Function.'''
-	print("Setup")
+    print("Setup")
     while True:
         try:
-			function_1()
-			sleep(1)
+            function_1()
+            sleep(1)
         except Exception as e:
-            print(f"Error: {e}")
+            print("\n[ERROR] {}".format(format_exc()))
             finish(1)
     finish(0)
 
 
 def finish(return_code):
     '''Finish function.'''
-    print(f"\n All resources released, exit({return_code}).\n")
+    print("\nAll resources released, exit({}).\n".format(return_code))
     exit(return_code)
 
 ####################################################################################################
