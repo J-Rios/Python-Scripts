@@ -60,7 +60,7 @@ def main():
             print("Provided string: {}".format(hex_string))
             print_script_usage()
             finish(1)
-        hex_string = hex_string.encode("utf-8")
+        hex_string = bytearray.fromhex(hex_string)
         b64_string = b64encode(hex_string)
         b64_string = b64_string.decode("utf-8")
         print(b64_string)
