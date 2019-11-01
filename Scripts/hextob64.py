@@ -35,16 +35,21 @@ def print_script_usage():
     print("  python hextob64.py c2889d8f")
 
 
+def hex_add_left_zero_padding(input_str):
+    '''Function that append left padding zero if provided hax string is odd.'''
+    output_str = input_str
+    if (len(input_str) % 2) != 0:
+        output_str = "0{}".format(input_str)
+    return output_str
+
+
 def string_is_hex(input_str):
     '''Function that check if provided string is a valid hexadecimal data.'''
-    if (len(input_str) % 2) != 0:
-        return False
     try:
         int(input_str, 16)
         return True
     except Exception as e:
         return False
-    
 
 ####################################################################################################
 
@@ -55,6 +60,7 @@ def main():
     try:
         argv = get_and_check_args()
         hex_string = argv[0]
+        hex_string = hex_add_left_zero_padding(hex_string)
         if not string_is_hex(hex_string):
             print("\nProvided string is not a valid hexadecimal data.")
             print("Provided string: {}".format(hex_string))
