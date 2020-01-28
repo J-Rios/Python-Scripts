@@ -15,7 +15,7 @@ from signal import signal, SIGTERM, SIGINT
 ### Constants ###
 
 FILE_NAME = sys_argv[0]
-CRC16_CCITT_POLY = 0x8408
+CRC32_POLY = 0x04c11db7
 
 ####################################################################################################
 
@@ -39,21 +39,23 @@ def print_script_usage():
     print("")
 
 
-def crc16(data, poly, init = 0xFFFF, reverse=False):
-    '''CRC-16-CCITT Algorithm'''
+def make_word(b, poly):
+    '''Create a word from a byte.'''
+    c = b << 24
+    for _ in range(8):
+        if c & 0x80000000 :
+            c = (c << 1 & 0xFFFFFFFF) ^ poly
+        else:
+            c = c << 1 & 0xFFFFFFFF
+    return c
+
+
+def crc32b(data, poly, init = 0xFFFFFFFF, xorout = 0x00):
     crc = init
-    for b in data:
-        cur_byte = 0xFF & b
-        for _ in range(0, 8):
-            if (crc & 0x0001) ^ (cur_byte & 0x0001):
-                crc = (crc >> 1) ^ poly
-            else:
-                crc >>= 1
-            cur_byte >>= 1
-    crc = (~crc & 0xFFFF)
-    if reverse:
-        crc = (crc << 8) | ((crc >> 8) & 0xFF)
-    return crc & 0xFFFF
+    for i in range(len(data)):
+        crc = (crc << 8 & 0xFFFFFFFF) ^ make_word(((crc >> 24) ^ data[i]) & 0xFF, poly)
+    crc = crc ^ xorout
+    return crc
 
 ####################################################################################################
 
@@ -68,9 +70,9 @@ def main():
         # Read the file
         with open(file_path, "rb") as f:
             _bytes = f.read()
-        # Get the CRC-16-CCITT value and print it as hexadecimal string with leading zeros
-        crc_value = crc16(_bytes, CRC16_CCITT_POLY)
-        crc_value = "{:04X}".format(crc_value)
+        # Get the CRC-32 value and print it as hexadecimal string with leading zeros
+        crc_value = crc32b(_bytes, CRC32_POLY, 0x00, 0x00)
+        crc_value = "{:08X}".format(crc_value)
         crc_value = "0x{}".format(crc_value.upper())
         print(crc_value)
     except Exception:
