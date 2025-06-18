@@ -11,12 +11,10 @@ Description:
     to care about it.
 Developer:
     Jose Miguel Rios Rubio
-Creation date:
-    04/02/2019
-Last modified date:
+Date:
     18/06/2025
 Version:
-    2.0.0
+    0.0.0
 '''
 
 ###############################################################################
@@ -31,6 +29,9 @@ import logging
 
 # OS Library
 import os
+
+# SSL/TLS Library
+import ssl
 
 # Time Library
 import time
@@ -168,7 +169,9 @@ class ClientMQTT(mqtt.Client):
                     if cert_file and key_file:
                         kwargs["certfile"] = cert_file
                         kwargs["keyfile"] = key_file
-                    self.tls_set(**kwargs)
+                    self.tls_set(tls_version=ssl.PROTOCOL_TLSv1_2,
+                                 cert_reqs=ssl.CERT_NONE,
+                                 **kwargs)
                     logger.debug("TLS configuration applied.")
                 except Exception as e:
                     logger.error(f"TLS setup failed: {str(e)}")
