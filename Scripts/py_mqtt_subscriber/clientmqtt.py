@@ -3,130 +3,182 @@
 
 '''
 Script:
-    mqttfunc.py
+    mqttclient.py
 Description:
-    MQTT client functionality library to check for request (sub) and send process status (pub).
+    MQTT client component that allows to connect to a server, subscribe
+    to topics and publish messages.
+    The component creates a non-blocking thread so the user doesn't need
+    to care about it.
 Developer:
     Jose Miguel Rios Rubio
 Creation date:
     04/02/2019
 Last modified date:
-    27/02/2019
+    18/06/2025
 Version:
-    0.0.1
+    2.0.0
 '''
 
-####################################################################################################
+###############################################################################
+# Standard Libraries
+###############################################################################
 
-### Imported modules ###
+# JSON Library
+import json
 
-from time import sleep
-from sys import version_info
+# Logging Library
+import logging
+
+# OS Library
+import os
+
+# Time Library
+import time
+
+
+###############################################################################
+# Third-Party Libraries
+###############################################################################
+
+# MQTT Library
 from paho.mqtt import client as mqtt
 
-####################################################################################################
 
-### MQTT Client Class ###
+###############################################################################
+# Logger Setup
+###############################################################################
+
+logger = logging.getLogger(__name__)
+
+
+###############################################################################
+# MQTT Client Class
+###############################################################################
 
 class ClientMQTT(mqtt.Client):
-    '''MQTT Client object to get an encapsulated, ease and simple way of communication.'''
+    '''
+    MQTT Client object to get an encapsulated, ease and simple way of
+    communication.
+    '''
 
-    ################################################################################################
+    ####################################################################
+    # MQTT Callbacks
+    ####################################################################
 
-    ### Auxiliar ###
-
-    def myprint(self, text):
-        if not self.hideall:
-            print(text)
-    
-    def is_running_with_py2(self):
-        '''Check if script is running using Python 2.'''
-        if version_info[0] == 2:
-            return True
-        return False
-
-    ################################################################################################
-
-    ### MQTT Callbacks ###
-
-    def on_connect(self, mqttc, userdata, flags, rc):
-        if rc == 0:
-            self.myprint("MQTT successfully connected.")
-            for i in range(0, len(self.topics_subs)):
-                if self.topics_subs[i] == False:
-                    if self.log:
-                        self.myprint("Subscribing to {}".format(self.topics_list[i]))
+    def on_connect(self, client, userdata, flags, reasonCode, properties=None):
+        if reasonCode == mqtt.MQTT_ERR_SUCCESS:
+            logger.debug("MQTT successfully connected.")
+            for i in range(len(self.topics_subs)):
+                if not self.topics_subs[i]:
+                    logger.debug(f"Subscribing to {self.topics_list[i]}")
                     self.subscription(self.topics_list[i])
             self.isconnected = True
         else:
-            self.myprint("MQTT connection fail.")
-            self.myprint("  {}.".format(mqtt.connack_string(rc)))
-        self.myprint("")
+            error_str = mqtt.connack_string(reasonCode)
+            logger.error(f"MQTT connection failed: {error_str}")
+        logger.debug("")
 
+    def on_disconnect(self, client, userdata, reasonCode, properties=None):
+        logger.debug("MQTT disconnected.")
+        if reasonCode != mqtt.MQTT_ERR_SUCCESS:
+            error_str = mqtt.error_string(reasonCode)
+            logger.debug(f"  Disconnect reason: {error_str}")
+        logger.debug("")
 
-    def on_disconnect(self, mqttc, userdata, rc):
-        self.myprint("MQTT disconnected.")
-        #for i in range(0, len(self.topics_subs)):
-        #    self.topics_subs[i] = False
-        if rc != 0:
-            self.myprint("  {}".format(mqtt.error_string(rc)))
-        self.myprint("")
+    def on_message(self, client, userdata, msg):
+        logger.debug("MQTT message received.")
+        logger.debug(f"  QoS: {msg.qos}")
+        logger.debug(f"  Topic: {msg.topic}")
+        logger.debug(f"  Payload: {msg.payload}")
+        logger.debug("")
+        self.received_msg_callback(client, self.topics, userdata, msg)
 
+    def on_publish(self, client, userdata, mid):
+        logger.debug("MQTT message published.")
+        logger.debug(f"  mid: {mid}")
+        logger.debug("")
 
-    def on_message(self, mqttc, userdata, msg):
-        if self.log:
-            self.myprint("MQTT message received.")
-            self.myprint("  QoS: {}".format(str(msg.qos)))
-            self.myprint("  Topic: {}".format(msg.topic))
-            self.myprint("  Payload: {}".format(str(msg.payload)))
-            self.myprint("")
-        self.received_msg_callback(mqttc, self.topics, userdata, msg)
+    def on_subscribe(self, client, userdata, mid, granted_qos,
+                     properties=None):
+        logger.debug("MQTT topic subscribed.")
+        logger.debug(f"  mid: {mid}")
+        logger.debug(f"  granted QoS: {granted_qos}")
+        logger.debug("")
 
+    def on_unsubscribe(self, client, userdata, mid, properties=None):
+        logger.debug("MQTT topic unsubscribed.")
+        logger.debug(f"  mid: {mid}")
+        logger.debug("")
 
-    def on_publish(self, mqttc, userdata, mid):
-        self.myprint("MQTT message published.")
-        if self.log:
-            if userdata is not None:
-                self.myprint("  userdata: {}".format(str(mid)))
-            self.myprint("  mid: {}".format(str(mid)))
-        self.myprint("")
+    def on_log(self, client, userdata, level, buf):
+        if self.protocol_log:
+            logger.debug(buf)
 
+    ####################################################################
+    # Public Methods
+    ####################################################################
 
-    def on_subscribe(self, mqttc, userdata, mid, qos):
-        if self.log:
-            self.myprint("MQTT topic subscribed.")
-            self.myprint("  userdata: {}".format(str(userdata)))
-            self.myprint("  mid: {}".format(str(mid)))
-            if len(qos) == 1:
-                self.myprint("  qos: {}".format(str(qos[0])))
-            else:
-                self.myprint("  qos: {}".format(qos))
-            self.myprint("")
-
-
-    def on_unsubscribe(self, mqttc, userdata, mid):
-        self.myprint("MQTT topic unsubscribed.")
-        if self.log:
-            self.myprint("  userdata: {}".format(userdata))
-            self.myprint("  mid: {}".format(mid))
-        self.myprint("")
-
-
-    def on_log(self, mqttc, obj, level, string):
-        if self.log:
-            self.myprint("MQTT log:")
-            self.myprint(string)
-            self.myprint("")
-
-
-    def is_connected(self):
-        return self.isconnected
-
-    ################################################################################################
-
-    def launch(self, host, port, keepalive=60, user=None, passw=None, topics=None, rxcallback=None, 
-               log=False, hideall=False):
-        # Initialize object attributes
+    def launch(self, config_file=None, topics=None, rxcallback=None,
+               protocol_log=False, max_retries=10, retry_interval_s=5):
+        '''
+        Starts MQTT client connection.
+        Parameters:
+            - config_file: path to MQTT connection config JSON file
+            - topics: list or object with topics
+            - rxcallback: function to call on message received
+            - protocol_log: enable internal logging
+            - max_retries: max connection attempts (default: 10)
+            - retry_interval_s: seconds between retries
+        '''
+        # Load from JSON if provided
+        if config_file is not None:
+            try:
+                with open(config_file, "r") as f:
+                    config = json.load(f)
+                client_id = config.get("CLIENTID", "mqttclient")
+                host = config.get("HOST", "")
+                port = config.get("PORT", 0)
+                user = config.get("USER", "")
+                passw = config.get("PASS", "")
+                ca_cert = config.get("CA_CERT_FILE", "")
+                cert_file = config.get("CERT_FILE", "")
+                key_file = config.get("CERT_KEY_FILE", "")
+                keepalive = config.get("KEEPALIVE", 60)
+            except Exception as e:
+                logger.error(f"Error loading MQTT config file: {str(e)}")
+                return False
+            # TLS configuration
+            use_tls = any([ca_cert, cert_file, key_file])
+            if use_tls:
+                # Check if cert files exists
+                if ca_cert and not os.path.isfile(ca_cert):
+                    logger.error(f"CA certificate not found: {ca_cert}")
+                    return False
+                if cert_file and not os.path.isfile(cert_file):
+                    logger.error(f"Client certificate not found: {cert_file}")
+                    return False
+                if key_file and not os.path.isfile(key_file):
+                    logger.error(f"Client key not found: {key_file}")
+                    return False
+                # Apply TLS config
+                try:
+                    kwargs = {}
+                    if ca_cert:
+                        kwargs["ca_certs"] = ca_cert
+                    if cert_file and key_file:
+                        kwargs["certfile"] = cert_file
+                        kwargs["keyfile"] = key_file
+                    self.tls_set(**kwargs)
+                    logger.debug("TLS configuration applied.")
+                except Exception as e:
+                    logger.error(f"TLS setup failed: {str(e)}")
+                    return False
+        # Check for mandatory config
+        if not host or (port == 0):
+            return False
+        # Initialize internal state
+        if client_id:
+            self._client_id = client_id.encode()
         self.host = host
         self.port = port
         self.keepalive = keepalive
@@ -135,57 +187,66 @@ class ClientMQTT(mqtt.Client):
         self.topics = topics
         self.topics_list = []
         if topics is not None:
-            if type(topics) is list:
+            if isinstance(topics, list):
                 self.topics_list = topics
             else:
-                if self.is_running_with_py2(): # Support for Python2 interpreter
-                    for topic_attr, topic_val in topics.__dict__.iteritems():
-                        self.topics_list.append(topic_val)
-                else:
-                    for topic_attr, topic_val in topics.__dict__.items():
-                        self.topics_list.append(topic_val)
+                for _, topic_val in topics.__dict__.items():
+                    self.topics_list.append(topic_val)
         self.topics_subs = [False] * len(self.topics_list)
         self.received_msg_callback = rxcallback
-        self.log = log
-        self.hideall = hideall
+        self.protocol_log = protocol_log
         self.isconnected = False
-        # If provided, set user-password config
-        if (user is not None) and (user != "") and (passw is not None) and (passw != ""):
+        # Set auth if user/pass provided
+        if self.user and self.passw:
             self.username_pw_set(user, passw)
-        # Set client auto-reconnection when connection lost
-        #self.reconnect_delay_set(min_delay=1, max_delay=120)
-        #self.tls_set(ca_certs=None, certfile=None, keyfile=None, cert_reqs=ssl.CERT_REQUIRED, \
-        #             tls_version=ssl.PROTOCOL_TLS, ciphers=None)
-        # Launch connection
-        self.myprint("MQTT connecting...")
-        connection_start = False
-        while not connection_start:
+        self.reconnect_delay_set(min_delay=1, max_delay=60)
+        logger.debug("MQTT connecting...")
+        attempt = 0
+        connected = False
+        while not connected and (max_retries is None or attempt < max_retries):
             try:
                 self.connect(host, port, keepalive)
-                connection_start = True
+                connected = True
             except Exception as e:
-                self.myprint("MQTT Error when connecting to MQTT Broker: {}".format(str(e)))
-                sleep(5)
+                attempt += 1
+                str_attempts = f"{attempt}/{max_retries}"
+                logger.error(f"[{str_attempts}] MQTT fail connect: {str(e)}")
+                time.sleep(retry_interval_s)
+        if not connected:
+            logger.error("Max retries reached. MQTT client failed to connect.")
+            return False
         self.loop_start()
+        return True
 
+    def is_connected(self):
+        return self.isconnected
 
     def subscription(self, topic, qos=2):
-        '''Make all MQTT subsciptions.'''
-        (result, mid) = self.subscribe(topic=topic, qos=qos)
-        if result != 0:
-            self.myprint("MQTT Error when subscribing to {}. {}.".format(topic, self.error_string(result)))
+        '''Make all MQTT subscriptions.'''
+        result = self.subscribe(topic=topic, qos=qos)
+        if result[0] != mqtt.MQTT_ERR_SUCCESS:
+            str_error = mqtt.error_string(result.rc)
+            logger.error(f"Fail to subscribe to {topic}. {str_error}")
             self.disconnect()
         else:
             self.topics_subs[self.topics_list.index(topic)] = True
-            self.myprint("MQTT subscribed to {}.".format(topic))
-
+            logger.debug(f"MQTT subscribed to {topic}.")
 
     def send_publish(self, topic="", payload=None, qos=0, retain=False):
-        self.publish(topic, payload, qos, retain)
-
+        result = self.publish(topic, payload, qos, retain)
+        if result.rc != mqtt.MQTT_ERR_SUCCESS:
+            str_error = mqtt.error_string(result.rc)
+            logger.error(f"Failed to publish to {topic}. {str_error}")
 
     def end(self):
         '''Finalize loop.'''
         self.disconnect()
         self.loop_stop()
 
+    ####################################################################
+    # Private Methods
+    ####################################################################
+
+    # None
+
+###############################################################################
