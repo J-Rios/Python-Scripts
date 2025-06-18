@@ -87,6 +87,7 @@ class ClientMQTT(mqtt.Client):
             error_str = mqtt.error_string(reasonCode)
             logger.debug(f"  Disconnect reason: {error_str}")
         logger.debug("")
+        self.isconnected = False
 
     def on_message(self, client, userdata, msg):
         logger.debug("MQTT message received.")
@@ -107,11 +108,17 @@ class ClientMQTT(mqtt.Client):
         logger.debug(f"  mid: {mid}")
         logger.debug(f"  granted QoS: {granted_qos}")
         logger.debug("")
+        self.numsubs = self.numsubs + 1
+        if self.numsubs >= len(self.topics_list):
+            self.isfullysubscribed = True
 
     def on_unsubscribe(self, client, userdata, mid, properties=None):
         logger.debug("MQTT topic unsubscribed.")
         logger.debug(f"  mid: {mid}")
         logger.debug("")
+        if self.numsubs > 0:
+            self.numsubs = self.numsubs - 1
+            self.isfullysubscribed = False
 
     def on_log(self, client, userdata, level, buf):
         if self.protocol_log:
@@ -201,6 +208,8 @@ class ClientMQTT(mqtt.Client):
         self.received_msg_callback = rxcallback
         self.protocol_log = protocol_log
         self.isconnected = False
+        self.isfullysubscribed = False
+        self.numsubs = 0
         # Set auth if user/pass provided
         if self.user and self.passw:
             self.username_pw_set(user, passw)
@@ -225,6 +234,9 @@ class ClientMQTT(mqtt.Client):
 
     def is_connected(self):
         return self.isconnected
+
+    def is_subscribed(self):
+        return self.isfullysubscribed
 
     def subscription(self, topic, qos=2):
         '''Make all MQTT subscriptions.'''
